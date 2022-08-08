@@ -1,11 +1,12 @@
 from rest_framework.viewsets import ViewSet, ModelViewSet
-from cinemaapi.models import Cinema
-from cinemaapi.serializers import CinemaSerializer, UserSerializer, LogInSerializer
+from cinemaapi.models import Cinema, Reviews
+from cinemaapi.serializers import CinemaSerializer, UserSerializer, LogInSerializer, ReviewsSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate, login
 from rest_framework.views import APIView
 from rest_framework import authentication, permissions
+from rest_framework.decorators import action
 
 
 class UserCreationView(APIView):
@@ -33,6 +34,7 @@ class SignInView(APIView):
 
 
 class CinemaViewSetView(ModelViewSet):
+    authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     model = Cinema
     serializer_class = CinemaSerializer
@@ -46,5 +48,17 @@ class CinemaViewSetView(ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+
+    @action(methods=["post", ], detail=True)
+    def add_review(self, request, *args, **kwargs):
+        id = kwargs.get('pk')
+        movie = Cinema.objects.get(id=id)
+        user = request.user
+        serializer = ReviewsSerializer(data=request.data, context={"movie": movie, "user": user})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors)

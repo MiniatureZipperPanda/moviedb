@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer
-from cinemaapi.models import Cinema
+from cinemaapi.models import Cinema, Reviews
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
@@ -24,6 +24,19 @@ class UserSerializer(ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+class ReviewsSerializer(ModelSerializer):
+    user = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Reviews
+        exclude = ["movie"]
+
+    def create(self, validated_data):
+        user = self.context.get("user")
+        movie = self.context.get("movie")
+        return Reviews.objects.create(user=user, movie=movie, **validated_data)
 
 
 class LogInSerializer(serializers.Serializer):
